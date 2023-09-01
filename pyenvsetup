@@ -35,16 +35,49 @@
 
 #!/bin/bash
 
+# Constant Declarations
+declare +i -r SCRIPT_NAME="PYENVSETUP"
+declare +i -r SCRIPT_VERSION="0.02 alpha"
+
+
 : '
-MAIN - Script entry point
+MAIN: Script entry point
 
 PARAMETERS: none
 
-RETURNS: non
+RETURNS: none
 '
+
 function main(){
-    
+    clear
+    echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION\n\n"
+    check_user_privilege
+}
+
+
+: '
+CHECK_USER_PRIVILEGE: verify super user privileges
+
+PARAMETERS: none
+
+RETURNS: none
+'
+
+function check_user_privilege(){
+    if [ "$EUID" = 0 ]; then
+        echo -e "[+] ROOT PRIVILEGES: Running with root/sudo.\n"
+    else
+        echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
+        sudo -k
+        if sudo true; then
+            echo -e "\n[+] ROOT PRIVILEGES: Running with sudo.\n"
+        else
+            echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
+            echo -e "Exiting...\n"
+            exit
+        fi
+    fi
 }
 
 # Start script
-main()
+main
