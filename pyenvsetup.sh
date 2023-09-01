@@ -1,3 +1,4 @@
+#!/bin/bash
 : '
    File:           environment_setup
    Author:         Al Zuniga
@@ -33,7 +34,6 @@
                    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '
 
-#!/bin/bash
 
 # Constant Declarations
 declare +i -r SCRIPT_NAME="PYENVSETUP"
@@ -52,6 +52,7 @@ function main(){
     clear
     echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION\n\n"
     check_user_privilege
+    upd_upgrd_all_pkgs
 }
 
 
@@ -77,6 +78,48 @@ function check_user_privilege(){
             exit
         fi
     fi
+}
+
+: '
+UPD__UPGRD_ALL_PKGS: Gets a list of upgradeable packages and upgrades them.
+
+PARAMETERS: none
+
+RETURNS: none
+'
+
+function upd_upgrd_all_pkgs(){
+    # Update package manager
+    echo -e "\n##### PACKAGE MANAGER UPDATE #####\n"
+    echo -e "[+] Updating the package manager...\n"
+    sudo apt update > /dev/null 2>&1
+
+    # List packages to be upgrade
+    echo -e "\n##### PACKAGE MANAGER UPGRADE #####\n"
+    upgradeable_packages=$(sudo apt list -u -q 2>/dev/null | grep "/" | cut -d "/" -f1)
+    
+    if [ "$updgradeable_packages" != "" ]; then
+        echo -e "[+] Upgradeable Packages:\n"
+        echo -e "$upgradeable_packages\n"
+
+        # Prompt user whether or not to continue with upgrade
+        while true; do
+            echo -e "\n"
+            read -p "[+] [C/c]ontinue with upgrade [any other key to exit]?: " continue_upgrade
+            if [ "${continue_upgrade,,}" == "c"   ]; then
+                echo -e "[+] Updating packages. This may take a few minutes...\n"
+                #sudo apt upgrade -y
+                sudo apt upgrade --simulate # Debugging/Testing
+                break
+            else
+                echo -e "\n[!] Skipping package upgrades."
+                break
+            fi
+        done
+    else
+        echo -e "[+] No packages to upgrade.\n"
+    fi
+        
 }
 
 # Start script
