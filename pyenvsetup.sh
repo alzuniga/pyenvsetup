@@ -37,7 +37,7 @@
 
 # Constant Declarations
 declare +i -r SCRIPT_NAME="PYENVSETUP"
-declare +i -r SCRIPT_VERSION="0.02 alpha"
+declare +i -r SCRIPT_VERSION="0.03 alpha"
 
 
 : '
@@ -53,11 +53,12 @@ function main(){
     echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION\n\n"
     check_user_privilege
     upd_upgrd_all_pkgs
+    is_python_installed
 }
 
 
 : '
-CHECK_USER_PRIVILEGE: verify super user privileges
+CHECK_USER_PRIVILEGE: Verify super user privileges
 
 PARAMETERS: none
 
@@ -65,7 +66,9 @@ RETURNS: none
 '
 
 function check_user_privilege(){
-    if [ "$EUID" = 0 ]; then
+    echo -e "\n##### USER PRIVILEGE CHECK #####\n"
+
+    if [[ "$EUID" -eq 0 ]]; then
         echo -e "[+] ROOT PRIVILEGES: Running with root/sudo.\n"
     else
         echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
@@ -75,10 +78,60 @@ function check_user_privilege(){
         else
             echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
             echo -e "Exiting...\n"
-            exit
+            exit 1
         fi
     fi
 }
+
+: '
+IS_PYTHON_INSTALLED: Check if Python3 is installed on system.
+
+PARAMETERS: none
+
+RETURNS: none
+'
+
+function is_python_installed(){
+    echo -e "\n##### PYTHON INSTALLATION CHECK #####\n"
+    packages=()
+    
+    # Check for Python3 installation
+    if [[ "$(which python3)" ]]; then
+        echo "[+] INSTALLED: $(which python3)"
+    else
+        packages+=("python3")
+    fi
+
+    if [[ "$(which pip)" || "$(which pip3)" ]]; then
+        echo "[+] INSTALLED: $(which pip || which pip3)"
+    else
+        packages+=("python3-pip")
+    fi
+
+    if [[ ${#packages[@]} ]]; then
+        echo -e "[-] NOT FOUND: ${packages[@]}"
+
+        while true; do
+            echo -e "\n"
+            read -p "Install ${packages[@]} (Y/n)?: " continue_install
+
+            if [[ "${continue_install,,}" == "y" ]]; then
+                echo -e "\n[+] Installing ${packages[@]}. This may take a few minutes..."
+                # sudo apt install python3 python3-pip -y
+                sudo apt install -s ${packages[@]} 2>/dev/null | grep -Ei "[0-9]+ newly installed"  # Debugging/Testing
+                break
+            else
+                echo -e "\n[!] Skipping ${packages[@]} installation."
+                echo -e "[-] MISSING: ${packages[@]} required, but not installed.\n"
+                echo -e "Exiting...\n"
+                exit 1
+            fi
+        done
+    fi
+
+    return 0
+}
+
 
 : '
 UPD__UPGRD_ALL_PKGS: Gets a list of upgradeable packages and upgrades them.
@@ -98,28 +151,30 @@ function upd_upgrd_all_pkgs(){
     echo -e "\n##### PACKAGE MANAGER UPGRADE #####\n"
     upgradeable_packages=$(sudo apt list -u -q 2>/dev/null | grep "/" | cut -d "/" -f1)
     
-    if [ "$updgradeable_packages" != "" ]; then
+    if [[ -n "$updgradeable_packages" ]]; then
         echo -e "[+] Upgradeable Packages:\n"
         echo -e "$upgradeable_packages\n"
 
         # Prompt user whether or not to continue with upgrade
         while true; do
             echo -e "\n"
-            read -p "[+] [C/c]ontinue with upgrade [any other key to exit]?: " continue_upgrade
-            if [ "${continue_upgrade,,}" == "c"   ]; then
-                echo -e "[+] Updating packages. This may take a few minutes...\n"
+            read -p "Continue with upgrade (Y/n)?: " continue_upgrade
+            if [[ "${continue_upgrade,,}" == "y" ]]; then
+                echo "[+] Updating packages. This may take a few minutes..."
                 #sudo apt upgrade -y
                 sudo apt upgrade --simulate # Debugging/Testing
+                echo -e "[+] Packages updated.\n"
                 break
             else
-                echo -e "\n[!] Skipping package upgrades."
+                echo -e "[!] Skipping package upgrades.\n"
                 break
             fi
         done
     else
         echo -e "[+] No packages to upgrade.\n"
     fi
-        
+    
+    return 0
 }
 
 # Start script
