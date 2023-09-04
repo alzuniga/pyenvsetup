@@ -37,7 +37,7 @@
 
 # Constant Declarations
 declare +i -r SCRIPT_NAME="PYENVSETUP"
-declare +i -r SCRIPT_VERSION="0.03 alpha"
+declare +i -r SCRIPT_VERSION="0.03 Alpha"
 
 
 : '
@@ -50,7 +50,8 @@ RETURNS: none
 
 function main(){
     clear
-    echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION\n\n"
+    echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION"
+    echo -e "-------------------------------\n"
     check_user_privilege
     upd_upgrd_all_pkgs
     is_python_installed

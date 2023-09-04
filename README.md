@@ -4,7 +4,7 @@
 
 Are you ready to dive into the world of Python programming? Look no further! **PyEnvSetup** is here to make the setup process smooth and hassle-free, even if you're new to the game.
 
-PyEnvSetup is designed specifically for those using freshly installed Debian or Debian derivative based systems. We understand that setting up a programming environment can be a bit intimidating, but with PyEnvSetup by your side, you'll be up and running in no time.
+PyEnvSetup is tailored for users with newly installed minimal Debian or Debian derivative-based systems. We recognize that configuring a programming environment can seem daunting, but with PyEnvSetup as your guide, you'll be ready to go quickly.
 <br/><br/><br/>
 ## What PyEnvSetup Does:
 
