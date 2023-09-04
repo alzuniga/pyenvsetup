@@ -118,7 +118,7 @@ function install_virtualenv(){
             # For systems with EXTERNALLY-MANAGED enabled
             if [[ -f "$file_path/EXTERNALLY-MANAGED" ]]; then
                 echo -e "[+] Disabling EXTERNALLY-MANAGED\n"
-                mv "$file_path/EXTERNALLY-MANAGED" \
+                sudo mv "$file_path/EXTERNALLY-MANAGED" \
                     "$file_path/DISABLED_EXTERNALLY-MANAGED"
 
                 echo -e "\n[+] Installing virtualenv. This may take a few minutes..."            
@@ -126,7 +126,7 @@ function install_virtualenv(){
 
                 # Re-enable EXTERNALLY-MANAGED
                 echo -e "[+] Enabling EXTERNALLY-MANAGED\n"
-                mv "$file_path/DISABLED_EXTERNALLY-MANAGED" \
+                sudo mv "$file_path/DISABLED_EXTERNALLY-MANAGED" \
                     "$file_path/EXTERNALLY-MANAGED"
             else
                 sudo -E -u $USER pip install --user virtualenv
