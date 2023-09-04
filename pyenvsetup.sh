@@ -37,7 +37,7 @@
 
 # Constant Declarations
 declare +i -r SCRIPT_NAME="PYENVSETUP"
-declare +i -r SCRIPT_VERSION="0.03 Alpha"
+declare +i -r SCRIPT_VERSION="0.05 Alpha"
 
 
 : '
@@ -52,10 +52,27 @@ function main(){
     clear
     echo -e "$SCRIPT_NAME version: $SCRIPT_VERSION"
     echo -e "-------------------------------\n"
+
+    # Check if user has root/sudo privileges
     check_user_privilege
+
+    # Make sure packages are up-to-date
+    # Run apt update and apt upgrade
     upd_upgrd_all_pkgs
+
+    # Check if Python3 and Pip are installed
     is_python_installed
+
+    # Install virtualenv
     install_virtualenv
+
+
+    echo -e "\n##### INSTALLATION COMPLETE #####\n"
+    echo -e "[+] Your Python environment is now setup.\n"
+    python3 --version
+    echo "$(python3 -m pip --version | grep -Eo '^pip [0-9]+\.[0-9]+\.[0-9]+')"
+    echo "$(python3 -m virtualenv --version | grep -Eo '^virtualenv [0-9]+\.[0-9]+\.[0-9]+')"
+    echo -e "\n"
 }
 
 
@@ -71,17 +88,14 @@ function check_user_privilege(){
     echo -e "\n##### USER PRIVILEGE CHECK #####\n"
 
     if [[ "$EUID" -eq 0 ]]; then
-        echo -e "[+] ROOT PRIVILEGES: Running with root/sudo.\n"
+        echo "[-] INCORRECT USER LEVEL: Running with root/sudo."
+        echo "[!] Do not run ${SCRIPT_NAME} as root/sudo."
+        echo -e "    ${SCRIPT_NAME} will ask for sudo privileges as needed.\n"
+        echo -e "Exiting...\n"
+        exit 1
     else
-        echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
+        echo -e "[+] CORRECT USER LEVEL: Running as a normal user.\n"
         sudo -k
-        if sudo true; then
-            echo -e "\n[+] ROOT PRIVILEGES: Running with sudo.\n"
-        else
-            echo -e "[-] NO PRIVILEGES: Requires root/sudo access!\n"
-            echo -e "Exiting...\n"
-            exit 1
-        fi
     fi
 }
 
@@ -98,10 +112,25 @@ function install_virtualenv(){
     read -p "Install virtualenv (Y/n)?: " continue_install
 
         if [[ "${continue_install,,}" == "y" ]]; then
-            echo -e "\n[+] Installing virtualenv. This may take a few minutes..."
-            #python3 -m pip install --user virtualenv
-            python3 -m pip install --user --dry-run --ignore-installed virtualenv
-            break
+            python_version=$(python3 --version | grep -Eo '3\.[0-9]{1,2}')
+            file_path="/usr/lib/python$python_version"
+
+            # For systems with EXTERNALLY-MANAGED enabled
+            if [[ -f "$file_path/EXTERNALLY-MANAGED" ]]; then
+                echo -e "[+] Disabling EXTERNALLY-MANAGED\n"
+                mv "$file_path/EXTERNALLY-MANAGED" \
+                    "$file_path/DISABLED_EXTERNALLY-MANAGED"
+
+                echo -e "\n[+] Installing virtualenv. This may take a few minutes..."            
+                sudo -E -u $USER pip install --user virtualenv
+
+                # Re-enable EXTERNALLY-MANAGED
+                echo -e "[+] Enabling EXTERNALLY-MANAGED\n"
+                mv "$file_path/DISABLED_EXTERNALLY-MANAGED" \
+                    "$file_path/EXTERNALLY-MANAGED"
+            else
+                sudo -E -u $USER pip install --user virtualenv
+            fi
         else
             echo -e "\n[!] Skipping virtualenv installation."
             echo -e "[-] RECOMMENDED: virtualenv recommended, but not installed.\n"
@@ -131,13 +160,15 @@ function is_python_installed(){
         packages+=("python3")
     fi
 
+    # Check for Pip installation
     if [[ "$(which pip)" || "$(which pip3)" ]]; then
         echo "[+] INSTALLED: $(which pip || which pip3)"
     else
         packages+=("python3-pip")
     fi
 
-    if [[ ${#packages[@]} ]]; then
+    # Install missing packages/dependcies
+    if (( ${#packages[@]} )); then
         echo -e "[-] NOT FOUND: ${packages[@]}"
 
         while true; do
@@ -146,8 +177,8 @@ function is_python_installed(){
 
             if [[ "${continue_install,,}" == "y" ]]; then
                 echo -e "\n[+] Installing ${packages[@]}. This may take a few minutes..."
-                # sudo apt install python3 python3-pip -y
-                sudo apt install -s ${packages[@]} 2>/dev/null | grep -Ei "[0-9]+ newly installed"  # Debugging/Testing
+                sudo apt -y install $(echo ${packages[@]})
+                sudo -K
                 break
             else
                 echo -e "\n[!] Skipping ${packages[@]} installation."
@@ -190,8 +221,7 @@ function upd_upgrd_all_pkgs(){
             read -p "Continue with upgrade (Y/n)?: " continue_upgrade
             if [[ "${continue_upgrade,,}" == "y" ]]; then
                 echo "[+] Updating packages. This may take a few minutes..."
-                #sudo apt upgrade -y
-                sudo apt upgrade --simulate # Debugging/Testing
+                sudo apt -y upgrade
                 echo -e "[+] Packages updated.\n"
                 break
             else
