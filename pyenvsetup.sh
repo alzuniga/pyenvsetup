@@ -55,6 +55,7 @@ function main(){
     check_user_privilege
     upd_upgrd_all_pkgs
     is_python_installed
+    install_virtualenv
 }
 
 
@@ -83,6 +84,33 @@ function check_user_privilege(){
         fi
     fi
 }
+
+: '
+INSTALL_VIRTUALENV: Installs virtualenv for creating virtual environments.
+
+PARAMETERS: none
+
+RETURNS: none
+'
+
+function install_virtualenv(){
+    echo -e "\n##### INSTALLING VIRTUALENV #####\n"
+    read -p "Install virtualenv (Y/n)?: " continue_install
+
+        if [[ "${continue_install,,}" == "y" ]]; then
+            echo -e "\n[+] Installing virtualenv. This may take a few minutes..."
+            #python3 -m pip install --user virtualenv
+            python3 -m pip install --user --dry-run --ignore-installed virtualenv
+            break
+        else
+            echo -e "\n[!] Skipping virtualenv installation."
+            echo -e "[-] RECOMMENDED: virtualenv recommended, but not installed.\n"
+            echo -e "Exiting...\n"
+            exit 1
+        fi
+
+}
+
 
 : '
 IS_PYTHON_INSTALLED: Check if Python3 is installed on system.
